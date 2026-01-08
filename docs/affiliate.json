@@ -1,0 +1,13 @@
+{
+  "updated_at": "2026-01-08",
+  "items": [
+    {
+      "id": "sample-1",
+      "title": "Contoh Produk Shopee",
+      "image": "https://via.placeholder.com/300x300?text=Shopee+Product",
+      "url": "https://shope.ee/example",
+      "category": "general",
+      "priority": 1
+    }
+  ]
+}
