@@ -589,9 +589,8 @@
             .filter(Boolean)
             .map((text) => `<span class="badge">${text}</span>`)
             .join("");
-          const statusText = [product.status1, product.status2]
-            .filter(Boolean)
-            .join(" / ");
+          const status1 = product.status1 || "";
+          const status2 = product.status2 || "";
           const priceText = formatPrice(product.harga);
           const productUrl = `p/${slug}.html`;
           const affiliateUrl = product.affiliate_url || "";
@@ -629,7 +628,8 @@
                   class="btn btn-primary share-trigger"
                   href="#"
                   data-title="${escapeAttr(product.title)}"
-                  data-status="${escapeAttr(statusText)}"
+                  data-status1="${escapeAttr(status1)}"
+                  data-status2="${escapeAttr(status2)}"
                   data-review="${escapeAttr(product.review || "")}"
                   data-harga="${escapeAttr(priceText)}"
                   data-description="${escapeAttr(product.description)}"
@@ -696,22 +696,23 @@
 
       const openShare = (data) => {
         activeShare = data;
-        const shareTextParts = [
-          data.title,
-          data.status ? `Status: ${data.status}` : "",
-          data.review ? `Review: ${data.review}` : "",
-          data.harga ? `Harga: ${data.harga}` : "",
-          data.description,
-        ].filter(Boolean);
-        const shareText = shareTextParts.join(" | ");
+        const lines = [];
+        if (data.status1) lines.push(`*${data.status1}*`);
+        if (data.status2) lines.push(`*${data.status2}*`);
+        if (data.review) lines.push(`*Review: ${data.review}*`);
+        if (data.harga) lines.push(`*Harga: ${data.harga}*`);
+        lines.push("");
+        if (data.description) lines.push(data.description);
+        if (data.url) lines.push(data.url);
+        const shareText = lines.join("\n");
         const shareUrl = new URL(data.url, window.location.href).toString();
         const encodedText = encodeURIComponent(shareText);
         const encodedUrl = encodeURIComponent(shareUrl);
 
-        shareWa.href = `https://wa.me/?text=${encodedText}%0A${encodedUrl}`;
-        shareX.href = `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`;
+        shareWa.href = `https://wa.me/?text=${encodedText}`;
+        shareX.href = `https://twitter.com/intent/tweet?text=${encodedText}`;
         shareFb.href = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedText}`;
-        sharePreview.textContent = `${shareText} - ${shareUrl}`;
+        sharePreview.textContent = shareText;
 
         shareOverlay.classList.add("open");
         shareOverlay.setAttribute("aria-hidden", "false");
@@ -739,11 +740,12 @@
           event.preventDefault();
           openShare({
             title: trigger.dataset.title,
-            status: trigger.dataset.status,
+            status1: trigger.dataset.status1,
+            status2: trigger.dataset.status2,
             review: trigger.dataset.review,
             harga: trigger.dataset.harga,
             description: trigger.dataset.description,
-            url: trigger.dataset.url,
+            url: new URL(trigger.dataset.url, window.location.href).toString(),
           });
           return;
         }
