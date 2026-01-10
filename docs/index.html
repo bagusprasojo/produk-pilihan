@@ -179,12 +179,43 @@
         gap: 6px;
       }
 
+      .band {
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .band-terlaris {
+        background: linear-gradient(135deg, #e0672f, #b93a2c);
+      }
+
+      .band-jaminan {
+        background: linear-gradient(135deg, #1f7a6f, #146056);
+      }
+
       .badge {
         padding: 6px 10px;
         border-radius: 999px;
         font-size: 0.72rem;
         background: rgba(30, 27, 22, 0.8);
         color: #fff;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .badge-price {
+        background: rgba(31, 122, 111, 0.9);
+      }
+
+      .star {
+        color: #f6c341;
       }
 
       .card-body {
@@ -407,6 +438,8 @@
             <option value="newest">Terbaru</option>
             <option value="oldest">Terlama</option>
             <option value="title">Judul A-Z</option>
+            <option value="price-asc">Harga Termurah</option>
+            <option value="price-desc">Harga Termahal</option>
           </select>
         </label>
       </section>
@@ -473,7 +506,7 @@
         products: [],
         filtered: [],
         page: 1,
-        pageSize: 6,
+        pageSize: 8,
         query: "",
         sort: "newest",
       };
@@ -531,6 +564,31 @@
           .replace(/</g, "&lt;")
           .replace(/>/g, "&gt;");
 
+      const escapeText = (value) =>
+        String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+
+      const getPriceTier = (value) => {
+        if (value === undefined || value === null || value === "") return "";
+        const digits = String(value).replace(/[^\d]/g, "");
+        if (!digits) return "";
+        const amount = Number(digits);
+        if (Number.isNaN(amount)) return "";
+        if (amount < 10000) return "1K";
+        if (amount < 100000) return "2K";
+        return "3K";
+      };
+
+      const parsePriceValue = (value) => {
+        if (value === undefined || value === null || value === "") return null;
+        const digits = String(value).replace(/[^\d]/g, "");
+        if (!digits) return null;
+        const amount = Number(digits);
+        return Number.isNaN(amount) ? null : amount;
+      };
+
       const applyFilters = () => {
         const query = state.query.trim().toLowerCase();
         let items = [...state.products];
@@ -547,6 +605,22 @@
           items.sort(
             (a, b) => new Date(a.tanggal || 0) - new Date(b.tanggal || 0)
           );
+        } else if (state.sort === "price-asc") {
+          items.sort((a, b) => {
+            const aPrice =
+              parsePriceValue(a.harga) ?? parsePriceValue(a.harga2) ?? 0;
+            const bPrice =
+              parsePriceValue(b.harga) ?? parsePriceValue(b.harga2) ?? 0;
+            return aPrice - bPrice;
+          });
+        } else if (state.sort === "price-desc") {
+          items.sort((a, b) => {
+            const aPrice =
+              parsePriceValue(a.harga) ?? parsePriceValue(a.harga2) ?? 0;
+            const bPrice =
+              parsePriceValue(b.harga) ?? parsePriceValue(b.harga2) ?? 0;
+            return bPrice - aPrice;
+          });
         } else {
           items.sort(
             (a, b) => new Date(b.tanggal || 0) - new Date(a.tanggal || 0)
@@ -585,13 +659,42 @@
           card.className = "card";
           card.style.animationDelay = `${index * 0.06}s`;
           const slug = slugify(product.title);
-          const badges = [product.status1, product.status2, product.review]
-            .filter(Boolean)
-            .map((text) => `<span class="badge">${text}</span>`)
-            .join("");
+          const badgeItems = [];
+          [product.status1, product.status2].filter(Boolean).forEach((status) => {
+            const lower = String(status).toLowerCase();
+            if (lower.includes("terlaris")) {
+              badgeItems.push(
+                `<span class="band band-terlaris" title="${escapeAttr(status)}">🏆</span>`
+              );
+              return;
+            }
+            if (lower.includes("jamina") || lower.includes("garansi")) {
+              badgeItems.push(
+                `<span class="band band-jaminan" title="${escapeAttr(status)}">Rp↘</span>`
+              );
+              return;
+            }
+            badgeItems.push(`<span class="badge">${escapeText(status)}</span>`);
+          });
+          if (product.review) {
+            badgeItems.push(
+              `<span class="badge"><span class="star">★</span>${escapeText(
+                product.review
+              )}</span>`
+            );
+          }
+          const priceTier = getPriceTier(product.harga);
+          if (priceTier) {
+            badgeItems.push(
+              `<span class="badge badge-price">${escapeText(priceTier)}</span>`
+            );
+          }
+          const badges = badgeItems.join("");
           const status1 = product.status1 || "";
           const status2 = product.status2 || "";
-          const priceText = formatPrice(product.harga);
+          const basePrice = formatPrice(product.harga);
+          const altPrice = product.harga2 ? formatPrice(product.harga2) : "";
+          const priceText = altPrice ? `${basePrice} - ${altPrice}` : basePrice;
           const productUrl = `p/${slug}.html`;
           const affiliateUrl = product.affiliate_url || "";
           const buyDisabled = !affiliateUrl;
