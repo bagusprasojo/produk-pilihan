@@ -254,6 +254,11 @@
         background: #fff;
       }
 
+      .btn-disabled {
+        opacity: 0.6;
+        pointer-events: none;
+      }
+
       .icon {
         width: 16px;
         height: 16px;
@@ -589,6 +594,8 @@
             .join(" / ");
           const priceText = formatPrice(product.harga);
           const productUrl = `p/${slug}.html`;
+          const affiliateUrl = product.affiliate_url || "";
+          const buyDisabled = !affiliateUrl;
           card.innerHTML = `
             <div class="card-media">
               <img src="${product.image}" alt="${product.title}" loading="lazy" />
@@ -604,8 +611,8 @@
               <p class="desc">${product.description}</p>
               <div class="actions">
                 <a
-                  class="btn btn-ghost"
-                  href="${product.affiliate_url}"
+                  class="btn btn-ghost${buyDisabled ? " btn-disabled" : ""}"
+                  href="${affiliateUrl || "#"}"
                   target="_blank"
                   rel="noreferrer"
                 >
