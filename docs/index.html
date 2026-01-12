@@ -129,6 +129,30 @@
         margin-bottom: 22px;
       }
 
+      .tag-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin: 18px 0 12px;
+      }
+
+      .tag-button {
+        padding: 8px 14px;
+        border-radius: 999px;
+        border: 1px solid var(--ring);
+        background: #fff;
+        font-weight: 600;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+
+      .tag-button.active {
+        background: var(--ink);
+        color: #fff;
+        box-shadow: 0 12px 28px rgba(30, 27, 22, 0.2);
+      }
+
       .input,
       .select {
         display: flex;
@@ -462,6 +486,7 @@
             loading="lazy"
           />
           <div class="header-copy">
+            <div class="stats" id="stats"></div>
             <h1>Produk pilihan hari ini.</h1>
             <p class="subhead">
               Temukan rekomendasi produk Shopee yang kami kurasi dengan standar
@@ -473,9 +498,9 @@
             </p>
           </div>
         </div>
-        <div class="stats" id="stats"></div>
       </header>
 
+      <div class="tag-bar" id="tagBar"></div>
       <section class="controls">
         <label class="input">
           <span>Search</span>
@@ -561,6 +586,7 @@
         page: 1,
         pageSize: 8,
         query: "",
+        tag: "all",
         sort: "newest",
       };
 
@@ -570,6 +596,7 @@
       const searchInput = document.getElementById("searchInput");
       const sortSelect = document.getElementById("sortSelect");
       const stats = document.getElementById("stats");
+      const tagBar = document.getElementById("tagBar");
       const shareOverlay = document.getElementById("shareOverlay");
       const closeShare = document.getElementById("closeShare");
       const shareWa = document.getElementById("shareWa");
@@ -641,6 +668,48 @@
         return Number.isNaN(amount) ? null : amount;
       };
 
+      const getTags = (items) => {
+        const tags = new Map();
+        items.forEach((item) => {
+          if (!Array.isArray(item.tags)) return;
+          item.tags.forEach((tag) => {
+            const label = String(tag).trim();
+            if (!label) return;
+            const key = label.toLowerCase();
+            if (!tags.has(key)) {
+              tags.set(key, { label, count: 0 });
+            }
+            tags.get(key).count += 1;
+          });
+        });
+        return Array.from(tags.entries())
+          .sort((a, b) => a[0].localeCompare(b[0]))
+          .map(([key, value]) => ({
+            key,
+            label: value.label,
+            count: value.count,
+          }));
+      };
+
+      const renderTags = () => {
+        const tags = getTags(state.products);
+        const buttons = [
+          { key: "all", label: "Semua", count: state.products.length },
+          ...tags,
+        ];
+        tagBar.innerHTML = "";
+        buttons.forEach((tag) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = `tag-button${
+            state.tag === tag.key ? " active" : ""
+          }`;
+          button.textContent = `${tag.label} (${tag.count})`;
+          button.dataset.tag = tag.key;
+          tagBar.appendChild(button);
+        });
+      };
+
       const applyFilters = () => {
         const query = state.query.trim().toLowerCase();
         let items = [...state.products];
@@ -650,6 +719,14 @@
               item.title.toLowerCase().includes(query) ||
               item.description.toLowerCase().includes(query)
           );
+        }
+        if (state.tag !== "all") {
+          items = items.filter((item) => {
+            if (!Array.isArray(item.tags)) return false;
+            return item.tags.some(
+              (tag) => String(tag).toLowerCase() === state.tag
+            );
+          });
         }
         if (state.sort === "title") {
           items.sort((a, b) => a.title.localeCompare(b.title));
@@ -710,42 +787,42 @@
           card.className = "card";
           card.style.animationDelay = `${index * 0.06}s`;
           const slug = slugify(product.title);
-          const badgeItems = [];
-          [product.status1, product.status2].filter(Boolean).forEach((status) => {
-            const lower = String(status).toLowerCase();
-            if (lower.includes("terlaris")) {
-              badgeItems.push(
-                `<span class="band band-terlaris" title="${escapeAttr(status)}">🏆</span>`
-              );
-              return;
-            }
-            if (lower.includes("jamina") || lower.includes("garansi")) {
-              badgeItems.push(
-                `<span class="band band-jaminan" title="${escapeAttr(status)}">Rp↘</span>`
-              );
-              return;
-            }
-            badgeItems.push(`<span class="badge">${escapeText(status)}</span>`);
-          });
-          if (product.review) {
-            badgeItems.push(
-              `<span class="badge"><span class="star">★</span>${escapeText(
-                product.review
-              )}</span>`
-            );
-          }
-          const priceTier = getPriceTier(product.harga);
-          if (priceTier) {
-            badgeItems.push(
-              `<span class="badge badge-price">${escapeText(priceTier)}</span>`
-            );
-          }
-          const badges = badgeItems.join("");
           const status1 = product.status1 || "";
           const status2 = product.status2 || "";
           const basePrice = formatPrice(product.harga);
           const altPrice = product.harga2 ? formatPrice(product.harga2) : "";
           const priceText = altPrice ? `${basePrice} - ${altPrice}` : basePrice;
+          const badgeItems = [];
+          [status1, status2].filter(Boolean).forEach((status) => {
+            const lower = String(status).toLowerCase();
+            if (lower.includes("terlaris")) {
+              badgeItems.push(
+                `<span class="band band-terlaris" title="${escapeAttr(status)}">&#x1F3C6;</span>`
+              );
+              return;
+            }
+            if (lower.includes("jamina") || lower.includes("garansi")) {
+              badgeItems.push(
+                `<span class="band band-jaminan" title="${escapeAttr(status)}">Rp&#x2198;</span>`
+              );
+              return;
+            }
+            badgeItems.push(
+              `<span class="badge" title="${escapeAttr(status)}">${escapeText(status)}</span>`
+            );
+          });
+          if (product.review) {
+            badgeItems.push(
+              `<span class="badge" title="${escapeAttr(product.review)}"><span class="star">&#9733;</span>${escapeText(product.review)}</span>`
+            );
+          }
+          const priceTier = getPriceTier(product.harga);
+          if (priceTier) {
+            badgeItems.push(
+              `<span class="badge badge-price" title="${escapeAttr(`Harga: ${priceText}`)}">${escapeText(priceTier)}</span>`
+            );
+          }
+          const badges = badgeItems.join("");
           const productUrl = `p/${slug}.html`;
           const affiliateUrl = product.affiliate_url || "";
           const buyDisabled = !affiliateUrl;
@@ -888,6 +965,14 @@
         applyFilters();
       });
 
+      tagBar.addEventListener("click", (event) => {
+        const button = event.target.closest(".tag-button");
+        if (!button) return;
+        state.tag = button.dataset.tag || "all";
+        renderTags();
+        applyFilters();
+      });
+
       document.addEventListener("click", (event) => {
         const trigger = event.target.closest(".share-trigger");
         if (trigger) {
@@ -932,6 +1017,7 @@
         .then((data) => {
           state.products = data;
           renderStats();
+          renderTags();
           applyFilters();
         })
         .catch(() => {
