@@ -166,7 +166,8 @@
         padding: 8px 14px;
         border-radius: 999px;
         border: 1px solid var(--ring);
-        background: #fff;
+        background: var(--accent-2);
+        color: #fff;
         font-weight: 600;
         font-size: 0.85rem;
         cursor: pointer;
@@ -747,7 +748,20 @@
           state.tag === "all"
             ? "Semua Tag"
             : buttons.find((tag) => tag.key === state.tag)?.label || "Tag";
-        tagShare.textContent = `Share ${tagLabel}`;
+        setTagShareLabel(`Share ${tagLabel}`);
+      };
+
+      const setTagShareLabel = (label) => {
+        tagShare.innerHTML = `
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M18 16a3 3 0 0 0-2.4 1.2l-7.1-3.6a3 3 0 0 0 0-2.2l7.1-3.6A3 3 0 1 0 15 5a3 3 0 0 0 .1.7L8 9.3a3 3 0 1 0 0 5.4l7.1 3.6A3 3 0 1 0 18 16Z"
+              />
+            </svg>
+          </span>
+          ${label}
+        `;
       };
 
       const applyFilters = () => {
@@ -1022,12 +1036,12 @@
         }
         try {
           await navigator.clipboard.writeText(url.toString());
-          tagShare.textContent = "Tersalin!";
+          setTagShareLabel("Tersalin!");
           setTimeout(() => {
             renderTags();
           }, 1200);
         } catch {
-          tagShare.textContent = "Gagal";
+          setTagShareLabel("Gagal");
           setTimeout(() => {
             renderTags();
           }, 1200);
