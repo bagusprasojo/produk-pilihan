@@ -42,7 +42,7 @@ def render_template(template, data):
 
 def build_slug(title):
     slug = title.lower()
-    slug = re.sub(r"[^a-z0-9\s-]", "", slug)
+    slug = re.sub(r"[^a-z0-9\s]", "", slug)
     slug = re.sub(r"\s+", "-", slug).strip("-")
     return slug
 
