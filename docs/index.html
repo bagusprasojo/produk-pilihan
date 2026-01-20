@@ -882,7 +882,7 @@
           const buyDisabled = !affiliateUrl;
           card.innerHTML = `
             <div class="card-media">
-              <img src="${product.image}" alt="${product.title}" loading="lazy" />
+              <a href="${escapeAttr(productUrl)}" target="_blank"><img src="${product.image}" alt="${product.title}" loading="lazy" /></a>
               <div class="badge-row">${badges}</div>
             </div>
             <div class="card-body">
